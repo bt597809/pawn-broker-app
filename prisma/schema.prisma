@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id            Int            @id @default(autoincrement())
+  code          String         @unique
+  name          String
+  accountType   String
+  ledgerEntries LedgerEntry[]
+}
+
+model Loan {
+  id                 Int         @id @default(autoincrement())
+  voucherNo          String      @unique
+  customerName       String
+  loanDate           DateTime
+  loanAmountPaise    Int
+  interestRateMonthly Float
+  pledgedItemName    String
+  grossWeightGm      Float
+  stoneWeightGm      Float
+  netWeightGm        Float
+  estimatedValuePaise Int
+  paymentMode        String
+  status             String      @default("ACTIVE")
+  createdAt          DateTime    @default(now())
+  payments           Payment[]
+}
+
+model Payment {
+  id                   Int      @id @default(autoincrement())
+  loanId               Int
+  voucherNo            String   @unique
+  paymentDate          DateTime
+  amountPaise          Int
+  interestPortionPaise Int
+  principalPortionPaise Int
+  createdAt            DateTime @default(now())
+  loan                 Loan     @relation(fields: [loanId], references: [id])
+}
+
+model LedgerEntry {
+  id            Int           @id @default(autoincrement())
+  voucherNo     String
+  entryDate     DateTime
+  accountId     Int
+  debitPaise    Int           @default(0)
+  creditPaise   Int           @default(0)
+  referenceType String
+  referenceId   Int
+  createdAt     DateTime      @default(now())
+  account       Account       @relation(fields: [accountId], references: [id])
+
+  @@index([entryDate])
+  @@index([voucherNo])
+}

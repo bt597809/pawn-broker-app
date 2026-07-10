@@ -1,0 +1,61 @@
+Hi,
+
+As part of the developer screening, we would like you to complete a small practical task.
+
+Task: Mini Pawn Broker Module
+
+Build a simple application with the following features:
+
+1. Create Loan
+* Customer name
+* Loan date
+* Loan amount
+* Interest rate per month
+* Pledged item name
+* Gross weight
+* Stone weight
+* Net weight (auto calculated)
+* Estimated item value
+* Payment mode – Cash/Bank
+
+2. Loan Details
+Show:
+* Loan amount
+* Interest till date
+* Principal paid
+* Interest paid
+* Balance principal
+* Total amount payable
+
+3. Receive Payment
+Allow partial and multiple payments.
+
+The system should automatically adjust the payment between interest and principal and calculate the remaining balance correctly.
+
+4. Basic Accounting
+Every loan and payment transaction should create Debit and Credit entries.
+
+Create a simple Day Book showing:
+
+Date | Voucher No. | Account | Debit | Credit
+
+The accounting logic and ledger structure should be decided by you and briefly explained.
+
+Important:
+* Use proper database design
+* Maintain transaction history instead of only updating balances
+* Handle basic validations and edge cases
+* UI can be simple and functional
+* You can use any technology stack you are comfortable with
+
+⏳ Time Limit: 1 Day
+
+Please share the source code, setup instructions, and a short explanation of your approach.
+
+The task will be evaluated mainly on logic, accounting understanding, database design, code quality, and problem-solving—not UI design.
+
+After submission, there may be a small change request to understand how well you know and can modify your own code.
+
+Good luck 👍
+
+Use node js and next js

@@ -1,16 +1,17 @@
 # Mini Pawn Broker Module
 
-A small loan management app for a pawn broker shop. Built with **Next.js**, **Node.js API routes**, **Prisma**, and **SQLite**.
+A small loan management app for a pawn broker shop. Built with **Next.js**, **Node.js API routes**, **Prisma**, and **PostgreSQL** (Neon).
 
 The focus here is backend logic: interest calculation, payment allocation, transaction history, and double-entry accounting.
 
 ## Setup
 
-Requirements: Node.js 18+ recommended. The project also builds on Node 16 with Next.js 13.
+Requirements: Node.js 18+ recommended.
 
 ```bash
 npm install
-npx prisma migrate dev --name init
+cp .env.example .env   # add your DATABASE_URL
+npx prisma migrate dev
 npm run db:seed
 npm run dev
 ```
@@ -22,6 +23,22 @@ Run tests:
 ```bash
 npm test
 ```
+
+## Deploy to Vercel
+
+1. Push this repo to GitHub
+2. Create a free database at [Neon](https://neon.tech) and copy the connection string
+3. Sign up at [Vercel](https://vercel.com) and import the GitHub repo
+4. Add environment variable: `DATABASE_URL` = your Neon connection string
+5. Set Node.js version to **20.x** in Vercel project settings
+6. Deploy — migrations run automatically via `prisma migrate deploy` in the build step
+7. After first deploy, seed the chart of accounts:
+   ```bash
+   npm run db:seed
+   ```
+   (run locally with production `DATABASE_URL` in `.env`)
+
+**Do not commit** `.env` or share your database password.
 
 ## Features
 

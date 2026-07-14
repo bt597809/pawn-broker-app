@@ -42,7 +42,7 @@ export class LoanRepository {
     return this.db.loan.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        payments: true,
+        payments: { orderBy: { paymentDate: "asc" } },
       },
     });
   }

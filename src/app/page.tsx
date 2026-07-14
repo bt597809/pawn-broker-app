@@ -2,6 +2,9 @@ import Link from "next/link";
 import { formatMoney } from "@/lib/money";
 import { loanService } from "@/services/loanService";
 
+// Always read loans from DB — do not cache a stale list at build time.
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const loans = await loanService.listLoans();
 

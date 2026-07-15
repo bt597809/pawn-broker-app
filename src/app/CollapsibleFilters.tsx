@@ -4,12 +4,14 @@ import { useState, ReactNode } from "react";
 
 export default function CollapsibleFilters({
   title = "Search filters",
+  defaultOpen = false,
   children,
 }: {
   title?: string;
+  defaultOpen?: boolean;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
 
   return (
     <div className="filter-panel">

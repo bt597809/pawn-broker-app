@@ -1,5 +1,10 @@
 export type PaymentMode = "CASH" | "BANK";
 
+export type StaffActor = {
+  userId: number;
+  name: string;
+};
+
 export interface CreateLoanInput {
   customerId: number;
   schemeId: number;
@@ -14,23 +19,31 @@ export interface CreateLoanInput {
   stoneWeightGm: number;
   estimatedValue?: number;
   paymentMode: PaymentMode;
+  comments?: string;
+  createdBy: StaffActor;
 }
 
 export interface ReceivePaymentInput {
   paymentDate: Date;
   amount: number;
   paymentMode: PaymentMode;
+  comments?: string;
+  performedBy: StaffActor;
 }
 
 export interface SettleLoanInput {
   paymentDate: Date;
   paymentMode: PaymentMode;
+  comments?: string;
+  performedBy: StaffActor;
 }
 
 export interface RenewLoanInput {
   paymentDate: Date;
   paymentMode: PaymentMode;
   amount?: number;
+  comments?: string;
+  performedBy: StaffActor;
 }
 
 export interface AuctionInput {
@@ -38,12 +51,15 @@ export interface AuctionInput {
   saleAmount: number;
   expenses: number;
   paymentMode: PaymentMode;
+  comments?: string;
+  performedBy: StaffActor;
 }
 
 export interface NoticeInput {
   noticeDate: Date;
   channel: "SHOP" | "PHONE" | "LETTER";
   notes?: string;
+  performedBy: StaffActor;
 }
 
 export interface LoanSummary {

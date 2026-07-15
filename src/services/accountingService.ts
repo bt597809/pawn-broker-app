@@ -1,48 +1,62 @@
-import { LedgerEntryInput, LedgerRepository, paymentModeToAccount } from "@/repositories/ledgerRepository";
+import {
+  LedgerEntryInput,
+  LedgerMeta,
+  LedgerRepository,
+  paymentModeToAccount,
+} from "@/repositories/ledgerRepository";
 
 export class AccountingService {
   constructor(private ledgerRepo: LedgerRepository) {}
 
-  async postLoanEntries(params: {
-    voucherNo: string;
-    entryDate: Date;
-    loanAmountPaise: number;
-    paymentMode: "CASH" | "BANK";
-    loanId: number;
-  }) {
+  async postLoanEntries(
+    params: {
+      voucherNo: string;
+      entryDate: Date;
+      loanAmountPaise: number;
+      paymentMode: "CASH" | "BANK";
+      loanId: number;
+    },
+    meta?: LedgerMeta
+  ) {
     const cashOrBank = paymentModeToAccount(params.paymentMode);
 
-    await this.ledgerRepo.createEntries([
-      {
-        voucherNo: params.voucherNo,
-        entryDate: params.entryDate,
-        accountCode: "LOAN_REC",
-        debitPaise: params.loanAmountPaise,
-        creditPaise: 0,
-        referenceType: "LOAN",
-        referenceId: params.loanId,
-      },
-      {
-        voucherNo: params.voucherNo,
-        entryDate: params.entryDate,
-        accountCode: cashOrBank,
-        debitPaise: 0,
-        creditPaise: params.loanAmountPaise,
-        referenceType: "LOAN",
-        referenceId: params.loanId,
-      },
-    ]);
+    await this.ledgerRepo.createEntries(
+      [
+        {
+          voucherNo: params.voucherNo,
+          entryDate: params.entryDate,
+          accountCode: "LOAN_REC",
+          debitPaise: params.loanAmountPaise,
+          creditPaise: 0,
+          referenceType: "LOAN",
+          referenceId: params.loanId,
+        },
+        {
+          voucherNo: params.voucherNo,
+          entryDate: params.entryDate,
+          accountCode: cashOrBank,
+          debitPaise: 0,
+          creditPaise: params.loanAmountPaise,
+          referenceType: "LOAN",
+          referenceId: params.loanId,
+        },
+      ],
+      meta
+    );
   }
 
-  async postPaymentEntries(params: {
-    voucherNo: string;
-    entryDate: Date;
-    paymentMode: "CASH" | "BANK";
-    amountPaise: number;
-    interestPortionPaise: number;
-    principalPortionPaise: number;
-    paymentId: number;
-  }) {
+  async postPaymentEntries(
+    params: {
+      voucherNo: string;
+      entryDate: Date;
+      paymentMode: "CASH" | "BANK";
+      amountPaise: number;
+      interestPortionPaise: number;
+      principalPortionPaise: number;
+      paymentId: number;
+    },
+    meta?: LedgerMeta
+  ) {
     const cashOrBank = paymentModeToAccount(params.paymentMode);
     const entries: LedgerEntryInput[] = [
       {
@@ -80,26 +94,24 @@ export class AccountingService {
       });
     }
 
-    await this.ledgerRepo.createEntries(entries);
+    await this.ledgerRepo.createEntries(entries, meta);
   }
 
-  /**
-   * Auction settlement — net cash = sale - expenses.
-   * Dr net cash (+ write-off if short); Cr principal + interest (+ surplus).
-   * Expenses: Dr Auction Exp / Cr Cash (offsets netting).
-   */
-  async postAuctionEntries(params: {
-    voucherNo: string;
-    entryDate: Date;
-    paymentMode: "CASH" | "BANK";
-    saleAmountPaise: number;
-    expensesPaise: number;
-    principalPortionPaise: number;
-    interestPortionPaise: number;
-    surplusPaise: number;
-    shortfallPaise: number;
-    auctionId: number;
-  }) {
+  async postAuctionEntries(
+    params: {
+      voucherNo: string;
+      entryDate: Date;
+      paymentMode: "CASH" | "BANK";
+      saleAmountPaise: number;
+      expensesPaise: number;
+      principalPortionPaise: number;
+      interestPortionPaise: number;
+      surplusPaise: number;
+      shortfallPaise: number;
+      auctionId: number;
+    },
+    meta?: LedgerMeta
+  ) {
     const cashOrBank = paymentModeToAccount(params.paymentMode);
     const netCash = params.saleAmountPaise - params.expensesPaise;
     const entries: LedgerEntryInput[] = [];
@@ -185,6 +197,6 @@ export class AccountingService {
       });
     }
 
-    await this.ledgerRepo.createEntries(entries);
+    await this.ledgerRepo.createEntries(entries, meta);
   }
 }

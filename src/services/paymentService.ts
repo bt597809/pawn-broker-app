@@ -7,6 +7,7 @@ import {
   ReceivePaymentInput,
   RenewLoanInput,
   SettleLoanInput,
+  StaffActor,
 } from "@/domain/types";
 import { AppError } from "@/lib/errors";
 import { toPaise } from "@/lib/money";
@@ -38,14 +39,7 @@ export class PaymentService {
       throw new AppError("Payment amount must be greater than zero");
     }
 
-    const loanRepo = new LoanRepository(prisma);
-    const loan = await loanRepo.findById(loanId);
-    if (!loan) {
-      throw new AppError("Loan not found", 404);
-    }
-    if (!isOpenLoan(loan.status)) {
-      throw new AppError("Cannot receive payment on a closed loan");
-    }
+    const loan = await this.loadOpenLoan(loanId);
     validatePaymentDate(input.paymentDate, loan.loanDate);
 
     const summary = buildLoanSummary(
@@ -61,18 +55,20 @@ export class PaymentService {
       throw new AppError("Payment exceeds total amount payable");
     }
 
-    await this.persistPayment(loan, paymentPaise, input.paymentDate, input.paymentMode);
+    await this.persistPayment({
+      loan,
+      paymentPaise,
+      paymentDate: input.paymentDate,
+      paymentMode: input.paymentMode,
+      comments: input.comments,
+      performedBy: input.performedBy,
+      txnType: "PAYMENT",
+    });
     return this.loanService.getLoanDetails(loanId);
   }
 
   async settleLoan(loanId: number, input: SettleLoanInput) {
-    const loan = await new LoanRepository(prisma).findById(loanId);
-    if (!loan) {
-      throw new AppError("Loan not found", 404);
-    }
-    if (!isOpenLoan(loan.status)) {
-      throw new AppError("Loan is already closed");
-    }
+    const loan = await this.loadOpenLoan(loanId);
     if (loan.scheme && !loan.scheme.precloseAllowed) {
       throw new AppError("Pre-closure is not allowed for this scheme");
     }
@@ -93,24 +89,21 @@ export class PaymentService {
       return this.loanService.getLoanDetails(loanId);
     }
 
-    await this.persistPayment(
+    await this.persistPayment({
       loan,
-      summary.totalPayablePaise,
-      input.paymentDate,
-      input.paymentMode,
-      "CLOSED"
-    );
+      paymentPaise: summary.totalPayablePaise,
+      paymentDate: input.paymentDate,
+      paymentMode: input.paymentMode,
+      comments: input.comments,
+      performedBy: input.performedBy,
+      txnType: "SETTLE",
+      forceStatus: "CLOSED",
+    });
     return this.loanService.getLoanDetails(loanId);
   }
 
   async renewLoan(loanId: number, input: RenewLoanInput) {
-    const loan = await new LoanRepository(prisma).findById(loanId);
-    if (!loan) {
-      throw new AppError("Loan not found", 404);
-    }
-    if (!isOpenLoan(loan.status)) {
-      throw new AppError("Cannot renew a closed loan");
-    }
+    const loan = await this.loadOpenLoan(loanId);
     validatePaymentDate(input.paymentDate, loan.loanDate);
 
     const summary = buildLoanSummary(
@@ -140,25 +133,22 @@ export class PaymentService {
     const tenureDays = loan.scheme?.tenureDays ?? 90;
     const newDue = addDays(input.paymentDate, tenureDays);
 
-    await this.persistPayment(
+    await this.persistPayment({
       loan,
       paymentPaise,
-      input.paymentDate,
-      input.paymentMode,
-      "RENEWED",
-      newDue
-    );
+      paymentDate: input.paymentDate,
+      paymentMode: input.paymentMode,
+      comments: input.comments,
+      performedBy: input.performedBy,
+      txnType: "RENEW",
+      forceStatus: "RENEWED",
+      newDueDate: newDue,
+    });
     return this.loanService.getLoanDetails(loanId);
   }
 
   async addNotice(loanId: number, input: NoticeInput) {
-    const loan = await new LoanRepository(prisma).findById(loanId);
-    if (!loan) {
-      throw new AppError("Loan not found", 404);
-    }
-    if (!isOpenLoan(loan.status)) {
-      throw new AppError("Cannot add notice on a closed loan");
-    }
+    const loan = await this.loadOpenLoan(loanId);
 
     await prisma.$transaction(async (tx) => {
       await tx.loanNotice.create({
@@ -167,6 +157,7 @@ export class PaymentService {
           noticeDate: input.noticeDate,
           channel: input.channel,
           notes: input.notes?.trim() || null,
+          performedByUserId: input.performedBy.userId,
         },
       });
       await new LoanRepository(tx).updateStatus(loanId, "NOTICE");
@@ -176,13 +167,7 @@ export class PaymentService {
   }
 
   async auctionLoan(loanId: number, input: AuctionInput) {
-    const loan = await new LoanRepository(prisma).findById(loanId);
-    if (!loan) {
-      throw new AppError("Loan not found", 404);
-    }
-    if (!isOpenLoan(loan.status)) {
-      throw new AppError("Loan is already closed");
-    }
+    const loan = await this.loadOpenLoan(loanId);
     if (input.saleAmount <= 0) {
       throw new AppError("Sale amount must be greater than zero");
     }
@@ -204,9 +189,14 @@ export class PaymentService {
     const net = salePaise - expensesPaise;
     const surplusPaise = Math.max(0, net - dues);
     const shortfallPaise = Math.max(0, dues - net);
-
     const interestPortion = summary.interestTillDatePaise;
     const principalPortion = summary.balancePrincipalPaise;
+    const comments = input.comments?.trim() || null;
+    const meta = {
+      staffName: input.performedBy.name,
+      narration: comments,
+      performedByUserId: input.performedBy.userId,
+    };
 
     await prisma.$transaction(async (tx) => {
       const loanRepo = new LoanRepository(tx);
@@ -234,10 +224,11 @@ export class PaymentService {
           surplusPaise,
           shortfallPaise,
           paymentMode: input.paymentMode,
+          comments,
+          performedByUserId: input.performedBy.userId,
         },
       });
 
-      // Keep payment history so balances derive to zero after auction.
       if (dues > 0) {
         const payVoucher = await payRepo.nextPaymentVoucherNo(input.auctionDate);
         await payRepo.create({
@@ -247,21 +238,27 @@ export class PaymentService {
           amountPaise: interestPortion + principalPortion,
           interestPortionPaise: interestPortion,
           principalPortionPaise: principalPortion,
+          comments,
+          txnType: "AUCTION",
+          performedByUserId: input.performedBy.userId,
         });
       }
 
-      await accounting.postAuctionEntries({
-        voucherNo,
-        entryDate: input.auctionDate,
-        paymentMode: input.paymentMode,
-        saleAmountPaise: salePaise,
-        expensesPaise,
-        principalPortionPaise: principalPortion,
-        interestPortionPaise: interestPortion,
-        surplusPaise,
-        shortfallPaise,
-        auctionId: auction.id,
-      });
+      await accounting.postAuctionEntries(
+        {
+          voucherNo,
+          entryDate: input.auctionDate,
+          paymentMode: input.paymentMode,
+          saleAmountPaise: salePaise,
+          expensesPaise,
+          principalPortionPaise: principalPortion,
+          interestPortionPaise: interestPortion,
+          surplusPaise,
+          shortfallPaise,
+          auctionId: auction.id,
+        },
+        meta
+      );
 
       await loanRepo.updateStatus(loanId, "AUCTIONED", {
         closedAt: input.auctionDate,
@@ -271,14 +268,40 @@ export class PaymentService {
     return this.loanService.getLoanDetails(loanId);
   }
 
-  private async persistPayment(
-    loan: NonNullable<Awaited<ReturnType<LoanRepository["findById"]>>>,
-    paymentPaise: number,
-    paymentDate: Date,
-    paymentMode: "CASH" | "BANK",
-    forceStatus?: "CLOSED" | "RENEWED",
-    newDueDate?: Date
-  ) {
+  private async loadOpenLoan(loanId: number) {
+    const loan = await new LoanRepository(prisma).findById(loanId);
+    if (!loan) {
+      throw new AppError("Loan not found", 404);
+    }
+    if (!isOpenLoan(loan.status)) {
+      throw new AppError("Loan is already closed");
+    }
+    return loan;
+  }
+
+  private async persistPayment(opts: {
+    loan: NonNullable<Awaited<ReturnType<LoanRepository["findById"]>>>;
+    paymentPaise: number;
+    paymentDate: Date;
+    paymentMode: "CASH" | "BANK";
+    comments?: string;
+    performedBy: StaffActor;
+    txnType: string;
+    forceStatus?: "CLOSED" | "RENEWED";
+    newDueDate?: Date;
+  }) {
+    const {
+      loan,
+      paymentPaise,
+      paymentDate,
+      paymentMode,
+      performedBy,
+      txnType,
+      forceStatus,
+      newDueDate,
+    } = opts;
+    const comments = opts.comments?.trim() || null;
+
     const fromDate = getLastEventDate(loan.loanDate, loan.payments);
     const summary = buildLoanSummary(
       loan.loanAmountPaise,
@@ -311,17 +334,27 @@ export class PaymentService {
         amountPaise: paymentPaise,
         interestPortionPaise: split.interestPortionPaise,
         principalPortionPaise: split.principalPortionPaise,
+        comments,
+        txnType,
+        performedByUserId: performedBy.userId,
       });
 
-      await accounting.postPaymentEntries({
-        voucherNo,
-        entryDate: paymentDate,
-        paymentMode,
-        amountPaise: paymentPaise,
-        interestPortionPaise: split.interestPortionPaise,
-        principalPortionPaise: split.principalPortionPaise,
-        paymentId: saved.id,
-      });
+      await accounting.postPaymentEntries(
+        {
+          voucherNo,
+          entryDate: paymentDate,
+          paymentMode,
+          amountPaise: paymentPaise,
+          interestPortionPaise: split.interestPortionPaise,
+          principalPortionPaise: split.principalPortionPaise,
+          paymentId: saved.id,
+        },
+        {
+          staffName: performedBy.name,
+          narration: comments,
+          performedByUserId: performedBy.userId,
+        }
+      );
 
       const updatedSummary = buildLoanSummary(
         loan.loanAmountPaise,

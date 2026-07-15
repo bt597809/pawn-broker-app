@@ -35,6 +35,8 @@ export class LoanRepository {
     netWeightGm: number;
     estimatedValuePaise: number;
     paymentMode: PaymentMode;
+    comments?: string | null;
+    createdByUserId: number;
   }) {
     return this.db.loan.create({ data });
   }
@@ -43,11 +45,21 @@ export class LoanRepository {
     return this.db.loan.findUnique({
       where: { id },
       include: {
-        payments: { orderBy: { paymentDate: "asc" } },
-        notices: { orderBy: { noticeDate: "asc" } },
-        auctions: { orderBy: { auctionDate: "asc" } },
+        payments: {
+          orderBy: { paymentDate: "asc" },
+          include: { performedBy: true },
+        },
+        notices: {
+          orderBy: { noticeDate: "asc" },
+          include: { performedBy: true },
+        },
+        auctions: {
+          orderBy: { auctionDate: "asc" },
+          include: { performedBy: true },
+        },
         scheme: true,
         customer: true,
+        createdBy: true,
       },
     });
   }
@@ -59,6 +71,7 @@ export class LoanRepository {
         payments: { orderBy: { paymentDate: "asc" } },
         scheme: true,
         customer: true,
+        createdBy: true,
       },
     });
   }

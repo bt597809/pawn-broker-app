@@ -30,6 +30,7 @@ export default async function LoanDetailPage({ params }: { params: { id: string 
         <p className="muted">
           {loan.voucherNo} · {loan.pledgedItemName} · {displayStatus}
           {loan.dueDate ? ` · Due ${loan.dueDate.toISOString().slice(0, 10)}` : ""}
+          {loan.createdBy ? ` · Created by ${loan.createdBy.name}` : ""}
         </p>
 
         <div className="grid">
@@ -58,6 +59,14 @@ export default async function LoanDetailPage({ params }: { params: { id: string 
           {formatMoney(loan.maxEligiblePaise)}
           {loan.scheme ? ` · Scheme: ${loan.scheme.name}` : ""}
         </p>
+
+        {loan.comments && (
+          <p style={{ marginTop: 12, whiteSpace: "pre-wrap" }}>
+            <strong>Loan comments:</strong>
+            <br />
+            {loan.comments}
+          </p>
+        )}
       </div>
 
       {open && (
@@ -81,24 +90,30 @@ export default async function LoanDetailPage({ params }: { params: { id: string 
             <tr>
               <th>Date</th>
               <th>Voucher</th>
+              <th>Type</th>
               <th>Amount</th>
               <th>Interest</th>
               <th>Principal</th>
+              <th>By</th>
+              <th>Comments</th>
             </tr>
           </thead>
           <tbody>
             {loan.payments.length === 0 && (
               <tr>
-                <td colSpan={5}>No payments recorded yet.</td>
+                <td colSpan={8}>No payments recorded yet.</td>
               </tr>
             )}
             {loan.payments.map((p) => (
               <tr key={p.id}>
                 <td>{p.paymentDate.toISOString().slice(0, 10)}</td>
                 <td>{p.voucherNo}</td>
+                <td>{p.txnType}</td>
                 <td>{formatMoney(p.amountPaise)}</td>
                 <td>{formatMoney(p.interestPortionPaise)}</td>
                 <td>{formatMoney(p.principalPortionPaise)}</td>
+                <td>{p.performedBy?.name || "—"}</td>
+                <td style={{ whiteSpace: "pre-wrap" }}>{p.comments || "—"}</td>
               </tr>
             ))}
           </tbody>
@@ -113,6 +128,7 @@ export default async function LoanDetailPage({ params }: { params: { id: string 
               <tr>
                 <th>Date</th>
                 <th>Channel</th>
+                <th>By</th>
                 <th>Notes</th>
               </tr>
             </thead>
@@ -121,7 +137,8 @@ export default async function LoanDetailPage({ params }: { params: { id: string 
                 <tr key={n.id}>
                   <td>{n.noticeDate.toISOString().slice(0, 10)}</td>
                   <td>{n.channel}</td>
-                  <td>{n.notes || "—"}</td>
+                  <td>{n.performedBy?.name || "—"}</td>
+                  <td style={{ whiteSpace: "pre-wrap" }}>{n.notes || "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -141,6 +158,8 @@ export default async function LoanDetailPage({ params }: { params: { id: string 
                 <th>Expenses</th>
                 <th>Surplus</th>
                 <th>Shortfall</th>
+                <th>By</th>
+                <th>Comments</th>
               </tr>
             </thead>
             <tbody>
@@ -152,6 +171,8 @@ export default async function LoanDetailPage({ params }: { params: { id: string 
                   <td>{formatMoney(a.expensesPaise)}</td>
                   <td>{formatMoney(a.surplusPaise)}</td>
                   <td>{formatMoney(a.shortfallPaise)}</td>
+                  <td>{a.performedBy?.name || "—"}</td>
+                  <td style={{ whiteSpace: "pre-wrap" }}>{a.comments || "—"}</td>
                 </tr>
               ))}
             </tbody>

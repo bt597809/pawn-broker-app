@@ -207,6 +207,10 @@ export default function NewLoanPage() {
             </select>
           </label>
         </div>
+        <label style={{ marginTop: 8 }}>
+          Comments (locker / packet / storage notes)
+          <textarea name="comments" rows={3} placeholder="e.g. Locker A-12, packet #45" />
+        </label>
         <p className="muted" style={{ marginTop: 8 }}>
           Due date is set from scheme tenure. Interest rate defaults from scheme.
         </p>

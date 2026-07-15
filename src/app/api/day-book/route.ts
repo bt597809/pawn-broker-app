@@ -25,6 +25,8 @@ export async function GET(request: Request) {
       account: entry.account.name,
       debit: entry.debitPaise > 0 ? formatMoney(entry.debitPaise) : "",
       credit: entry.creditPaise > 0 ? formatMoney(entry.creditPaise) : "",
+      staff: entry.staffName || entry.performedBy?.name || "",
+      narration: entry.narration || "",
     }));
 
     return NextResponse.json({ data });

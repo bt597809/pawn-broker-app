@@ -50,6 +50,12 @@ label textarea {
   margin: 0;
 }
 
+textarea {
+  resize: vertical;
+  min-height: 64px;
+  font: inherit;
+}
+
 label.checkbox-row {
   flex-direction: row;
   align-items: center;

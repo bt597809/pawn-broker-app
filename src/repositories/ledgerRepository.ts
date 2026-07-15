@@ -3,6 +3,12 @@ import { PaymentMode } from "@/domain/types";
 
 type DbClient = PrismaClient | Prisma.TransactionClient;
 
+export type LedgerMeta = {
+  staffName?: string | null;
+  narration?: string | null;
+  performedByUserId?: number | null;
+};
+
 export type LedgerEntryInput = {
   voucherNo: string;
   entryDate: Date;
@@ -11,6 +17,9 @@ export type LedgerEntryInput = {
   creditPaise: number;
   referenceType: "LOAN" | "PAYMENT" | "AUCTION";
   referenceId: number;
+  staffName?: string | null;
+  narration?: string | null;
+  performedByUserId?: number | null;
 };
 
 export class LedgerRepository {
@@ -24,7 +33,7 @@ export class LedgerRepository {
     return account;
   }
 
-  async createEntries(entries: LedgerEntryInput[]) {
+  async createEntries(entries: LedgerEntryInput[], meta?: LedgerMeta) {
     for (const entry of entries) {
       const account = await this.getAccountByCode(entry.accountCode);
       await this.db.ledgerEntry.create({
@@ -36,6 +45,9 @@ export class LedgerRepository {
           creditPaise: entry.creditPaise,
           referenceType: entry.referenceType,
           referenceId: entry.referenceId,
+          staffName: entry.staffName ?? meta?.staffName ?? null,
+          narration: entry.narration ?? meta?.narration ?? null,
+          performedByUserId: entry.performedByUserId ?? meta?.performedByUserId ?? null,
         },
       });
     }
@@ -51,7 +63,7 @@ export class LedgerRepository {
 
     return this.db.ledgerEntry.findMany({
       where,
-      include: { account: true },
+      include: { account: true, performedBy: true },
       orderBy: [{ entryDate: "asc" }, { voucherNo: "asc" }, { id: "asc" }],
     });
   }

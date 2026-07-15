@@ -11,6 +11,9 @@ export class AuthService {
     if (!user) {
       throw new AppError("Invalid email or password", 401);
     }
+    if (!user.active) {
+      throw new AppError("This account is disabled. Contact admin.", 403);
+    }
 
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) {

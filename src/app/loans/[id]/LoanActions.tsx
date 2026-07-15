@@ -83,6 +83,10 @@ export default function LoanActions({
               </select>
             </label>
           </div>
+          <label>
+            Comments
+            <textarea name="comments" rows={2} placeholder="Settlement notes" />
+          </label>
           <p style={{ marginTop: 8 }}>
             <button type="submit">Settle loan</button>
           </p>
@@ -108,6 +112,10 @@ export default function LoanActions({
               </select>
             </label>
           </div>
+          <label>
+            Comments
+            <textarea name="comments" rows={2} placeholder="Renewal notes" />
+          </label>
           <p style={{ marginTop: 8 }}>
             <button type="submit" disabled={interestTillDatePaise <= 0}>
               Renew loan
@@ -132,11 +140,11 @@ export default function LoanActions({
                 <option value="LETTER">Letter</option>
               </select>
             </label>
-            <label>
-              Notes
-              <input name="notes" />
-            </label>
           </div>
+          <label>
+            Notes / comments
+            <textarea name="notes" rows={2} />
+          </label>
           <p style={{ marginTop: 8 }}>
             <button type="submit">Record notice</button>
           </p>
@@ -168,6 +176,10 @@ export default function LoanActions({
               </select>
             </label>
           </div>
+          <label>
+            Comments
+            <textarea name="comments" rows={2} placeholder="Auction notes" />
+          </label>
           <p style={{ marginTop: 8 }}>
             <button type="submit">Record auction</button>
           </p>

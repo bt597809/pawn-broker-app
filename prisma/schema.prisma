@@ -13,7 +13,14 @@ model User {
   passwordHash String
   name         String
   role         String   @default("CASHIER")
+  active       Boolean  @default(true)
   createdAt    DateTime @default(now())
+
+  loansCreated     Loan[]       @relation("LoanCreatedBy")
+  paymentsDone     Payment[]    @relation("PaymentPerformedBy")
+  noticesDone      LoanNotice[] @relation("NoticePerformedBy")
+  auctionsDone     Auction[]    @relation("AuctionPerformedBy")
+  ledgerEntries    LedgerEntry[] @relation("LedgerPerformedBy")
 }
 
 model Customer {
@@ -66,11 +73,14 @@ model Loan {
   netWeightGm         Float
   estimatedValuePaise Int
   paymentMode         String
+  comments            String?
+  createdByUserId     Int?
   status              String       @default("ACTIVE")
   closedAt            DateTime?
   createdAt           DateTime     @default(now())
   customer            Customer?    @relation(fields: [customerId], references: [id])
   scheme              Scheme?      @relation(fields: [schemeId], references: [id])
+  createdBy           User?        @relation("LoanCreatedBy", fields: [createdByUserId], references: [id])
   payments            Payment[]
   notices             LoanNotice[]
   auctions            Auction[]
@@ -84,45 +94,58 @@ model Payment {
   amountPaise           Int
   interestPortionPaise  Int
   principalPortionPaise Int
+  comments              String?
+  txnType               String   @default("PAYMENT")
+  performedByUserId     Int?
   createdAt             DateTime @default(now())
   loan                  Loan     @relation(fields: [loanId], references: [id])
+  performedBy           User?    @relation("PaymentPerformedBy", fields: [performedByUserId], references: [id])
 }
 
 model LoanNotice {
-  id         Int      @id @default(autoincrement())
-  loanId     Int
-  noticeDate DateTime
-  channel    String
-  notes      String?
-  createdAt  DateTime @default(now())
-  loan       Loan     @relation(fields: [loanId], references: [id])
+  id                Int      @id @default(autoincrement())
+  loanId            Int
+  noticeDate        DateTime
+  channel           String
+  notes             String?
+  performedByUserId Int?
+  createdAt         DateTime @default(now())
+  loan              Loan     @relation(fields: [loanId], references: [id])
+  performedBy       User?    @relation("NoticePerformedBy", fields: [performedByUserId], references: [id])
 }
 
 model Auction {
-  id              Int      @id @default(autoincrement())
-  loanId          Int
-  voucherNo       String   @unique
-  auctionDate     DateTime
-  saleAmountPaise Int
-  expensesPaise   Int      @default(0)
-  surplusPaise    Int      @default(0)
-  shortfallPaise  Int      @default(0)
-  paymentMode     String
-  createdAt       DateTime @default(now())
-  loan            Loan     @relation(fields: [loanId], references: [id])
+  id                Int      @id @default(autoincrement())
+  loanId            Int
+  voucherNo         String   @unique
+  auctionDate       DateTime
+  saleAmountPaise   Int
+  expensesPaise     Int      @default(0)
+  surplusPaise      Int      @default(0)
+  shortfallPaise    Int      @default(0)
+  paymentMode       String
+  comments          String?
+  performedByUserId Int?
+  createdAt         DateTime @default(now())
+  loan              Loan     @relation(fields: [loanId], references: [id])
+  performedBy       User?    @relation("AuctionPerformedBy", fields: [performedByUserId], references: [id])
 }
 
 model LedgerEntry {
-  id            Int      @id @default(autoincrement())
-  voucherNo     String
-  entryDate     DateTime
-  accountId     Int
-  debitPaise    Int      @default(0)
-  creditPaise   Int      @default(0)
-  referenceType String
-  referenceId   Int
-  createdAt     DateTime @default(now())
-  account       Account  @relation(fields: [accountId], references: [id])
+  id                Int      @id @default(autoincrement())
+  voucherNo         String
+  entryDate         DateTime
+  accountId         Int
+  debitPaise        Int      @default(0)
+  creditPaise       Int      @default(0)
+  referenceType     String
+  referenceId       Int
+  staffName         String?
+  narration         String?
+  performedByUserId Int?
+  createdAt         DateTime @default(now())
+  account           Account  @relation(fields: [accountId], references: [id])
+  performedBy       User?    @relation("LedgerPerformedBy", fields: [performedByUserId], references: [id])
 
   @@index([entryDate])
   @@index([voucherNo])

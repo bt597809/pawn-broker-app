@@ -26,6 +26,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/customers">Customers</Link>
                 <Link href="/schemes">Schemes</Link>
                 <Link href="/day-book">Day Book</Link>
+                {user.role === "ADMIN" && <Link href="/users">Users</Link>}
                 <span className="muted" style={{ marginLeft: 8 }}>
                   {user.name} ({user.role})
                 </span>

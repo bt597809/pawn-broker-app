@@ -75,6 +75,7 @@ export class LoanService {
     }
 
     const dueDate = addDays(input.loanDate, scheme.tenureDays);
+    const comments = input.comments?.trim() || null;
 
     return prisma.$transaction(async (tx) => {
       const loanRepo = new LoanRepository(tx);
@@ -102,15 +103,24 @@ export class LoanService {
         netWeightGm,
         estimatedValuePaise,
         paymentMode: input.paymentMode,
+        comments,
+        createdByUserId: input.createdBy.userId,
       });
 
-      await accounting.postLoanEntries({
-        voucherNo,
-        entryDate: input.loanDate,
-        loanAmountPaise,
-        paymentMode: input.paymentMode,
-        loanId: loan.id,
-      });
+      await accounting.postLoanEntries(
+        {
+          voucherNo,
+          entryDate: input.loanDate,
+          loanAmountPaise,
+          paymentMode: input.paymentMode,
+          loanId: loan.id,
+        },
+        {
+          staffName: input.createdBy.name,
+          narration: comments,
+          performedByUserId: input.createdBy.userId,
+        }
+      );
 
       return loan;
     });
@@ -152,7 +162,7 @@ export class LoanService {
 
   async getSettlementQuote(id: number, asOf: Date = new Date()) {
     const details = await this.getLoanDetails(id);
-    if (!isOpenStatus(details.loan.status)) {
+    if (details.loan.status === "CLOSED" || details.loan.status === "AUCTIONED") {
       throw new AppError("Loan is already closed");
     }
     const summary = buildLoanSummary(
@@ -164,10 +174,6 @@ export class LoanService {
     );
     return { ...details, summary, asOf };
   }
-}
-
-function isOpenStatus(status: string) {
-  return status !== "CLOSED" && status !== "AUCTIONED";
 }
 
 export const loanService = new LoanService();

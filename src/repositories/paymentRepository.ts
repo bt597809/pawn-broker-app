@@ -21,6 +21,9 @@ export class PaymentRepository {
     amountPaise: number;
     interestPortionPaise: number;
     principalPortionPaise: number;
+    comments?: string | null;
+    txnType?: string;
+    performedByUserId?: number | null;
   }) {
     return this.db.payment.create({ data });
   }

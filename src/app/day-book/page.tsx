@@ -8,6 +8,8 @@ type DayBookRow = {
   account: string;
   debit: string;
   credit: string;
+  staff: string;
+  narration: string;
 };
 
 export default function DayBookPage() {
@@ -50,7 +52,9 @@ export default function DayBookPage() {
           </label>
         </div>
         <p style={{ marginTop: 12 }}>
-          <button type="button" onClick={load}>Filter</button>
+          <button type="button" onClick={load}>
+            Filter
+          </button>
         </p>
         {error && <p className="error">{error}</p>}
       </div>
@@ -63,12 +67,14 @@ export default function DayBookPage() {
             <th>Account</th>
             <th>Debit</th>
             <th>Credit</th>
+            <th>Staff</th>
+            <th>Narration</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 && (
             <tr>
-              <td colSpan={5}>No entries yet.</td>
+              <td colSpan={7}>No entries yet.</td>
             </tr>
           )}
           {rows.map((row, idx) => (
@@ -78,6 +84,8 @@ export default function DayBookPage() {
               <td>{row.account}</td>
               <td>{row.debit}</td>
               <td>{row.credit}</td>
+              <td>{row.staff || "—"}</td>
+              <td style={{ whiteSpace: "pre-wrap" }}>{row.narration || "—"}</td>
             </tr>
           ))}
         </tbody>

@@ -23,13 +23,14 @@ export default async function HomePage() {
             <th>Amount</th>
             <th>Balance</th>
             <th>Status</th>
+            <th>Created by</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           {loans.length === 0 && (
             <tr>
-              <td colSpan={8}>No loans yet. Create one to get started.</td>
+              <td colSpan={9}>No loans yet. Create one to get started.</td>
             </tr>
           )}
           {loans.map((loan) => (
@@ -41,6 +42,7 @@ export default async function HomePage() {
               <td>{formatMoney(loan.loanAmountPaise)}</td>
               <td>{formatMoney(loan.summary.balancePrincipalPaise)}</td>
               <td>{loan.displayStatus}</td>
+              <td>{loan.createdBy?.name || "—"}</td>
               <td>
                 <Link href={`/loans/${loan.id}`}>View</Link>
               </td>

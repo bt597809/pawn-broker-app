@@ -64,6 +64,10 @@ export default function PaymentForm({
           </select>
         </label>
       </div>
+      <label>
+        Comments
+        <textarea name="comments" rows={2} placeholder="Optional notes for this receipt" />
+      </label>
       <p style={{ marginTop: 12 }}>
         <button type="submit">Record Payment</button>
       </p>

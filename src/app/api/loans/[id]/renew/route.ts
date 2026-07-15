@@ -10,17 +10,19 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const loanId = Number(params.id);
-    if (Number.isNaN(loanId)) {
-      throw new AppError("Invalid loan id");
-    }
+    if (Number.isNaN(loanId)) throw new AppError("Invalid loan id");
+
     const parsed = renewSchema.parse(await request.json());
     const details = await paymentService.renewLoan(loanId, {
       paymentDate: parseDate(parsed.paymentDate),
       paymentMode: parsed.paymentMode,
       amount: parsed.amount,
+      comments: parsed.comments,
+      performedBy: { userId: user.userId, name: user.name },
     });
+
     return NextResponse.json({ data: details }, { status: 201 });
   } catch (err) {
     return handleApiError(err);

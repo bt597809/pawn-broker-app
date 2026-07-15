@@ -16,7 +16,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const body = await request.json();
     const parsed = createLoanSchema.parse(body);
 
@@ -41,6 +41,8 @@ export async function POST(request: Request) {
       stoneWeightGm: parsed.stoneWeightGm,
       estimatedValue: parsed.estimatedValue,
       paymentMode: parsed.paymentMode,
+      comments: parsed.comments,
+      createdBy: { userId: user.userId, name: user.name },
     });
 
     return NextResponse.json({ data: loan }, { status: 201 });

@@ -3,8 +3,13 @@ import { customerService } from "@/services/customerService";
 
 export const dynamic = "force-dynamic";
 
-export default async function CustomersPage() {
-  const customers = await customerService.list();
+export default async function CustomersPage({
+  searchParams,
+}: {
+  searchParams: { q?: string };
+}) {
+  const q = searchParams.q || "";
+  const customers = await customerService.list({ q });
 
   return (
     <div>
@@ -13,6 +18,22 @@ export default async function CustomersPage() {
         <p>
           <Link href="/customers/new">Add customer</Link>
         </p>
+        <form method="get" style={{ marginTop: 12 }}>
+          <div className="grid">
+            <label>
+              Search
+              <input
+                name="q"
+                defaultValue={q}
+                placeholder="Name, phone, ID proof, address"
+              />
+            </label>
+          </div>
+          <p style={{ marginTop: 12 }}>
+            <button type="submit">Search</button>{" "}
+            <Link href="/customers">Clear</Link>
+          </p>
+        </form>
       </div>
       <table>
         <thead>
@@ -26,7 +47,7 @@ export default async function CustomersPage() {
         <tbody>
           {customers.length === 0 && (
             <tr>
-              <td colSpan={4}>No customers yet.</td>
+              <td colSpan={4}>No customers match the filter.</td>
             </tr>
           )}
           {customers.map((c) => (

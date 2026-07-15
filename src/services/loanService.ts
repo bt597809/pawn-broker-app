@@ -146,9 +146,14 @@ export class LoanService {
     };
   }
 
-  async listLoans() {
+  async listLoans(filters?: {
+    q?: string;
+    status?: string;
+    from?: string;
+    to?: string;
+  }) {
     const loans = await new LoanRepository(prisma).findAll();
-    return loans.map((loan) => ({
+    const mapped = loans.map((loan) => ({
       ...loan,
       summary: buildLoanSummary(
         loan.loanAmountPaise,
@@ -158,6 +163,32 @@ export class LoanService {
       ),
       displayStatus: displayLoanStatus(loan.status, loan.dueDate),
     }));
+
+    const q = filters?.q?.trim().toLowerCase();
+    const status = filters?.status?.trim().toUpperCase();
+    const from = filters?.from ? new Date(filters.from) : null;
+    const to = filters?.to ? new Date(filters.to) : null;
+    if (to) to.setHours(23, 59, 59, 999);
+
+    return mapped.filter((loan) => {
+      if (q) {
+        const hay = [
+          loan.voucherNo,
+          loan.customerName,
+          loan.pledgedItemName,
+          loan.createdBy?.name || "",
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (status && status !== "ALL" && loan.displayStatus !== status) {
+        return false;
+      }
+      if (from && loan.loanDate < from) return false;
+      if (to && loan.loanDate > to) return false;
+      return true;
+    });
   }
 
   async getSettlementQuote(id: number, asOf: Date = new Date()) {

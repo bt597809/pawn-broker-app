@@ -10,8 +10,17 @@ export type CreateCustomerInput = {
 };
 
 export class CustomerService {
-  async list() {
-    return prisma.customer.findMany({ orderBy: { createdAt: "desc" } });
+  async list(filters?: { q?: string }) {
+    const customers = await prisma.customer.findMany({ orderBy: { createdAt: "desc" } });
+    const q = filters?.q?.trim().toLowerCase();
+    if (!q) return customers;
+
+    return customers.filter((c) => {
+      const hay = [c.name, c.phone || "", c.idProofNo || "", c.idProofType || "", c.address || ""]
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
   }
 
   async create(input: CreateCustomerInput) {

@@ -8,18 +8,20 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <div className="card">
-        <h2>Today&apos;s summary</h2>
+      <div className="card dash-summary">
+        <h2 className="dash-heading">Today&apos;s summary</h2>
         <p className="muted">{new Date().toISOString().slice(0, 10)}</p>
         <div className="grid" style={{ marginTop: 12 }}>
           <p>
             Loans created: <strong>{s.loansCreatedToday}</strong>
           </p>
           <p>
-            Disbursed: <strong>{s.disbursedToday.toFixed(2)}</strong>
+            Disbursed:{" "}
+            <strong className="dash-metric dash-out">{s.disbursedToday.toFixed(2)}</strong>
           </p>
           <p>
-            Collections: <strong>{s.collectionsToday.toFixed(2)}</strong>
+            Collections:{" "}
+            <strong className="dash-metric dash-in">{s.collectionsToday.toFixed(2)}</strong>
           </p>
           <p>
             Interest collected: <strong>{s.interestCollectedToday.toFixed(2)}</strong>
@@ -31,7 +33,8 @@ export default async function DashboardPage() {
             Open loans: <strong>{s.openLoans}</strong>
           </p>
           <p>
-            Overdue / notice: <strong>{s.overdueCount}</strong>
+            Overdue / notice:{" "}
+            <strong className="dash-metric dash-alert">{s.overdueCount}</strong>
           </p>
         </div>
       </div>

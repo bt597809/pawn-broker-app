@@ -149,3 +149,28 @@ button:disabled { background: #999; cursor: not-allowed; }
     padding: 0;
   }
 }
+
+/* Dashboard accents — heading + key figures only */
+.dash-heading {
+  margin: 0 0 4px;
+  color: #1a4d8f;
+  border-bottom: 3px solid #1a4d8f;
+  padding-bottom: 6px;
+  display: inline-block;
+}
+
+.dash-metric {
+  font-size: 1.15rem;
+}
+
+.dash-out {
+  color: #9a3412;
+}
+
+.dash-in {
+  color: #166534;
+}
+
+.dash-alert {
+  color: #b45309;
+}

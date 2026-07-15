@@ -48,7 +48,7 @@ export default function SchemeForm() {
           Max LTV %
           <input name="maxLtvPercent" type="number" step="0.1" min="1" max="100" defaultValue="75" required />
         </label>
-        <label>
+        <label className="checkbox-row">
           <input name="precloseAllowed" type="checkbox" defaultChecked /> Pre-close allowed
         </label>
       </div>

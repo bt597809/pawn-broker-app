@@ -31,11 +31,40 @@ table { width: 100%; border-collapse: collapse; background: #fff; }
 th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
 th { background: #e8e4db; }
 
-label { display: block; margin-bottom: 12px; }
+/* Stack label above control so every field aligns the same */
+label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
 
-input, select, button {
+label input,
+label select,
+label textarea {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+}
+
+label.checkbox-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+label.checkbox-row input {
+  width: auto;
+}
+
+input, select, textarea, button {
   font: inherit;
-  padding: 6px 8px;
+  padding: 8px 10px;
+  border: 1px solid #999;
+  border-radius: 2px;
 }
 
 button {
@@ -43,10 +72,21 @@ button {
   color: #fff;
   border: none;
   cursor: pointer;
+  padding: 8px 14px;
 }
 
 button:disabled { background: #999; cursor: not-allowed; }
 
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 20px;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .grid { grid-template-columns: 1fr; }
+}
+
 .error { color: #a00; margin-bottom: 12px; }
 .muted { color: #666; font-size: 0.9rem; }

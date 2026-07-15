@@ -123,3 +123,29 @@ button:disabled { background: #999; cursor: not-allowed; }
 .filter-body {
   margin-top: 12px;
 }
+
+.print-sheet {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+  background: #fff;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  .wrap {
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+  header,
+  .no-print {
+    display: none !important;
+  }
+  .print-sheet {
+    max-width: none;
+    padding: 0;
+  }
+}

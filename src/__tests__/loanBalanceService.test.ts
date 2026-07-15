@@ -11,6 +11,13 @@ function makePayment(overrides: Partial<Payment>): Payment {
     amountPaise: 5000,
     interestPortionPaise: 2000,
     principalPortionPaise: 3000,
+    comments: null,
+    txnType: "PAYMENT",
+    performedByUserId: null,
+    voided: false,
+    voidedAt: null,
+    voidReason: null,
+    voidedByUserId: null,
     createdAt: new Date("2026-02-01"),
     ...overrides,
   };

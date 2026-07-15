@@ -2,12 +2,16 @@ import { Payment } from "@prisma/client";
 import { calculateAccruedInterest } from "@/domain/interestCalculator";
 import { LoanSummary } from "@/domain/types";
 
+export function activePayments(payments: Payment[]): Payment[] {
+  return payments.filter((p) => !("voided" in p) || !p.voided);
+}
+
 export function getPrincipalPaid(payments: Payment[]): number {
-  return payments.reduce((sum, p) => sum + p.principalPortionPaise, 0);
+  return activePayments(payments).reduce((sum, p) => sum + p.principalPortionPaise, 0);
 }
 
 export function getInterestPaid(payments: Payment[]): number {
-  return payments.reduce((sum, p) => sum + p.interestPortionPaise, 0);
+  return activePayments(payments).reduce((sum, p) => sum + p.interestPortionPaise, 0);
 }
 
 export function getBalancePrincipal(loanAmountPaise: number, payments: Payment[]): number {
@@ -15,10 +19,11 @@ export function getBalancePrincipal(loanAmountPaise: number, payments: Payment[]
 }
 
 export function getLastEventDate(loanDate: Date, payments: Payment[]): Date {
-  if (payments.length === 0) {
+  const active = activePayments(payments);
+  if (active.length === 0) {
     return loanDate;
   }
-  return payments[payments.length - 1].paymentDate;
+  return active[active.length - 1].paymentDate;
 }
 
 export function buildLoanSummary(

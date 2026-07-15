@@ -16,11 +16,13 @@ model User {
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
 
-  loansCreated     Loan[]       @relation("LoanCreatedBy")
-  paymentsDone     Payment[]    @relation("PaymentPerformedBy")
-  noticesDone      LoanNotice[] @relation("NoticePerformedBy")
-  auctionsDone     Auction[]    @relation("AuctionPerformedBy")
+  loansCreated     Loan[]        @relation("LoanCreatedBy")
+  paymentsDone     Payment[]     @relation("PaymentPerformedBy")
+  paymentsVoided   Payment[]     @relation("PaymentVoidedBy")
+  noticesDone      LoanNotice[]  @relation("NoticePerformedBy")
+  auctionsDone     Auction[]     @relation("AuctionPerformedBy")
   ledgerEntries    LedgerEntry[] @relation("LedgerPerformedBy")
+  goldRates        GoldRate[]    @relation("GoldRateCreatedBy")
 }
 
 model Customer {
@@ -43,6 +45,18 @@ model Scheme {
   precloseAllowed      Boolean  @default(true)
   createdAt            DateTime @default(now())
   loans                Loan[]
+}
+
+model GoldRate {
+  id              Int      @id @default(autoincrement())
+  metalType       String
+  ratePerGramPaise Int
+  effectiveDate   DateTime
+  createdByUserId Int?
+  createdAt       DateTime @default(now())
+  createdBy       User?    @relation("GoldRateCreatedBy", fields: [createdByUserId], references: [id])
+
+  @@index([metalType, effectiveDate])
 }
 
 model Account {
@@ -87,19 +101,24 @@ model Loan {
 }
 
 model Payment {
-  id                    Int      @id @default(autoincrement())
+  id                    Int       @id @default(autoincrement())
   loanId                Int
-  voucherNo             String   @unique
+  voucherNo             String    @unique
   paymentDate           DateTime
   amountPaise           Int
   interestPortionPaise  Int
   principalPortionPaise Int
   comments              String?
-  txnType               String   @default("PAYMENT")
+  txnType               String    @default("PAYMENT")
   performedByUserId     Int?
-  createdAt             DateTime @default(now())
-  loan                  Loan     @relation(fields: [loanId], references: [id])
-  performedBy           User?    @relation("PaymentPerformedBy", fields: [performedByUserId], references: [id])
+  voided                Boolean   @default(false)
+  voidedAt              DateTime?
+  voidReason            String?
+  voidedByUserId        Int?
+  createdAt             DateTime  @default(now())
+  loan                  Loan      @relation(fields: [loanId], references: [id])
+  performedBy           User?     @relation("PaymentPerformedBy", fields: [performedByUserId], references: [id])
+  voidedBy              User?     @relation("PaymentVoidedBy", fields: [voidedByUserId], references: [id])
 }
 
 model LoanNotice {
@@ -149,4 +168,5 @@ model LedgerEntry {
 
   @@index([entryDate])
   @@index([voucherNo])
+  @@index([referenceType, referenceId])
 }

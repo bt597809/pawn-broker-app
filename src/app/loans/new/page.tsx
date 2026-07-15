@@ -22,6 +22,8 @@ export default function NewLoanPage() {
   const [purity, setPurity] = useState("22");
   const [rate, setRate] = useState("");
   const [schemeId, setSchemeId] = useState("");
+  const [metalType, setMetalType] = useState("GOLD");
+  const [ratesByMetal, setRatesByMetal] = useState<Record<string, number>>({});
 
   const netWeight =
     grossWeight !== "" && stoneWeight !== ""
@@ -44,12 +46,27 @@ export default function NewLoanPage() {
     Promise.all([
       fetch("/api/customers").then((r) => r.json()),
       fetch("/api/schemes").then((r) => r.json()),
-    ]).then(([c, s]) => {
+      fetch("/api/gold-rates").then((r) => r.json()),
+    ]).then(([c, s, rates]) => {
       setCustomers(c.data || []);
       setSchemes(s.data || []);
       if (s.data?.[0]) setSchemeId(String(s.data[0].id));
+
+      const map: Record<string, number> = {};
+      for (const r of rates.data || []) {
+        if (!(r.metalType in map)) {
+          map[r.metalType] = r.ratePerGram;
+        }
+      }
+      setRatesByMetal(map);
+      if (map.GOLD) setRate(String(map.GOLD));
     });
   }, []);
+
+  useEffect(() => {
+    const next = ratesByMetal[metalType];
+    if (next != null) setRate(String(next));
+  }, [metalType, ratesByMetal]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -118,7 +135,11 @@ export default function NewLoanPage() {
           </label>
           <label>
             Metal
-            <select name="metalType" defaultValue="GOLD">
+            <select
+              name="metalType"
+              value={metalType}
+              onChange={(e) => setMetalType(e.target.value)}
+            >
               <option value="GOLD">Gold</option>
               <option value="SILVER">Silver</option>
             </select>

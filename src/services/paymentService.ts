@@ -147,6 +147,59 @@ export class PaymentService {
     return this.loanService.getLoanDetails(loanId);
   }
 
+  async voidPayment(
+    paymentId: number,
+    input: { reason?: string; performedBy: StaffActor }
+  ) {
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: { loan: true },
+    });
+    if (!payment) {
+      throw new AppError("Payment not found", 404);
+    }
+    if (payment.voided) {
+      throw new AppError("Payment is already voided");
+    }
+    if (payment.txnType === "AUCTION") {
+      throw new AppError("Auction clearances cannot be voided here");
+    }
+    if (payment.loan.status === "AUCTIONED") {
+      throw new AppError("Cannot void payments on an auctioned loan");
+    }
+
+    const reason = input.reason?.trim() || "Voided due to entry mistake";
+    const voidDate = new Date();
+
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { id: paymentId },
+        data: {
+          voided: true,
+          voidedAt: voidDate,
+          voidReason: reason,
+          voidedByUserId: input.performedBy.userId,
+        },
+      });
+
+      const ledgerRepo = new LedgerRepository(tx);
+      await ledgerRepo.reversePaymentEntries(paymentId, {
+        staffName: input.performedBy.name,
+        narration: `VOID ${payment.voucherNo}: ${reason}`,
+        performedByUserId: input.performedBy.userId,
+        voidDate,
+      });
+
+      if (payment.loan.status === "CLOSED") {
+        await new LoanRepository(tx).updateStatus(payment.loanId, "ACTIVE", {
+          closedAt: null,
+        });
+      }
+    });
+
+    return this.loanService.getLoanDetails(payment.loanId);
+  }
+
   async addNotice(loanId: number, input: NoticeInput) {
     const loan = await this.loadOpenLoan(loanId);
 

@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatMoney } from "@/lib/money";
 import { isOpenLoan } from "@/domain/loanStatus";
 import { loanService } from "@/services/loanService";
 import PaymentForm from "./PaymentForm";
 import LoanActions from "./LoanActions";
+import VoidPaymentButton from "./VoidPaymentButton";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +33,9 @@ export default async function LoanDetailPage({ params }: { params: { id: string 
           {loan.voucherNo} · {loan.pledgedItemName} · {displayStatus}
           {loan.dueDate ? ` · Due ${loan.dueDate.toISOString().slice(0, 10)}` : ""}
           {loan.createdBy ? ` · Created by ${loan.createdBy.name}` : ""}
+        </p>
+        <p>
+          <Link href={`/loans/${loan.id}/print`}>Print pawn ticket</Link>
         </p>
 
         <div className="grid">
@@ -96,24 +101,40 @@ export default async function LoanDetailPage({ params }: { params: { id: string 
               <th>Principal</th>
               <th>By</th>
               <th>Comments</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {loan.payments.length === 0 && (
               <tr>
-                <td colSpan={8}>No payments recorded yet.</td>
+                <td colSpan={9}>No payments recorded yet.</td>
               </tr>
             )}
             {loan.payments.map((p) => (
-              <tr key={p.id}>
+              <tr key={p.id} style={p.voided ? { opacity: 0.55, textDecoration: "line-through" } : undefined}>
                 <td>{p.paymentDate.toISOString().slice(0, 10)}</td>
                 <td>{p.voucherNo}</td>
-                <td>{p.txnType}</td>
+                <td>
+                  {p.txnType}
+                  {p.voided ? " (VOID)" : ""}
+                </td>
                 <td>{formatMoney(p.amountPaise)}</td>
                 <td>{formatMoney(p.interestPortionPaise)}</td>
                 <td>{formatMoney(p.principalPortionPaise)}</td>
                 <td>{p.performedBy?.name || "—"}</td>
-                <td style={{ whiteSpace: "pre-wrap" }}>{p.comments || "—"}</td>
+                <td style={{ whiteSpace: "pre-wrap" }}>
+                  {p.comments || "—"}
+                  {p.voided && p.voidReason ? `\nVoid: ${p.voidReason}` : ""}
+                </td>
+                <td>
+                  <Link href={`/loans/${loan.id}/payments/${p.id}/print`}>Print</Link>
+                  {!p.voided && p.txnType !== "AUCTION" && loan.status !== "AUCTIONED" && (
+                    <>
+                      {" · "}
+                      <VoidPaymentButton paymentId={p.id} />
+                    </>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

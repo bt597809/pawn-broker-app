@@ -67,6 +67,38 @@ export class LedgerRepository {
       orderBy: [{ entryDate: "asc" }, { voucherNo: "asc" }, { id: "asc" }],
     });
   }
+
+  async reversePaymentEntries(
+    paymentId: number,
+    meta: { staffName: string; narration: string; performedByUserId: number; voidDate: Date }
+  ) {
+    const originals = await this.db.ledgerEntry.findMany({
+      where: { referenceType: "PAYMENT", referenceId: paymentId },
+      include: { account: true },
+      orderBy: { id: "asc" },
+    });
+    if (originals.length === 0) {
+      return;
+    }
+
+    const voidVoucher = `VD-${originals[0].voucherNo}`;
+    for (const entry of originals) {
+      await this.db.ledgerEntry.create({
+        data: {
+          voucherNo: voidVoucher,
+          entryDate: meta.voidDate,
+          accountId: entry.accountId,
+          debitPaise: entry.creditPaise,
+          creditPaise: entry.debitPaise,
+          referenceType: "PAYMENT",
+          referenceId: paymentId,
+          staffName: meta.staffName,
+          narration: meta.narration,
+          performedByUserId: meta.performedByUserId,
+        },
+      });
+    }
+  }
 }
 
 export function paymentModeToAccount(mode: PaymentMode): string {

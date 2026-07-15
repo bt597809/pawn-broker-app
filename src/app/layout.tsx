@@ -21,10 +21,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <h1>Pawn Broker</h1>
             {user ? (
               <nav>
+                <Link href="/dashboard">Dashboard</Link>
                 <Link href="/">Loans</Link>
                 <Link href="/loans/new">New Loan</Link>
                 <Link href="/customers">Customers</Link>
                 <Link href="/schemes">Schemes</Link>
+                <Link href="/rates">Rates</Link>
                 <Link href="/day-book">Day Book</Link>
                 {user.role === "ADMIN" && <Link href="/users">Users</Link>}
                 <span className="muted" style={{ marginLeft: 8 }}>

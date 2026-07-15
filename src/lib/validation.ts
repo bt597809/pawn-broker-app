@@ -82,6 +82,16 @@ export const setUserActiveSchema = z.object({
   active: z.boolean(),
 });
 
+export const goldRateSchema = z.object({
+  metalType: z.enum(["GOLD", "SILVER"]),
+  ratePerGram: z.coerce.number().positive(),
+  effectiveDate: z.string(),
+});
+
+export const voidPaymentSchema = z.object({
+  reason: z.string().optional(),
+});
+
 export function parseDate(value: string): Date {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {

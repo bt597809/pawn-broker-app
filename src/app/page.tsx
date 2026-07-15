@@ -2,7 +2,6 @@ import Link from "next/link";
 import { formatMoney } from "@/lib/money";
 import { loanService } from "@/services/loanService";
 
-// Always read loans from DB — do not cache a stale list at build time.
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
@@ -11,7 +10,7 @@ export default async function HomePage() {
   return (
     <div>
       <div className="card">
-        <p className="muted">Active and closed loans</p>
+        <p className="muted">Active, overdue, and closed loans</p>
       </div>
 
       <table>
@@ -20,6 +19,7 @@ export default async function HomePage() {
             <th>Voucher</th>
             <th>Customer</th>
             <th>Loan Date</th>
+            <th>Due</th>
             <th>Amount</th>
             <th>Balance</th>
             <th>Status</th>
@@ -29,7 +29,7 @@ export default async function HomePage() {
         <tbody>
           {loans.length === 0 && (
             <tr>
-              <td colSpan={7}>No loans yet. Create one to get started.</td>
+              <td colSpan={8}>No loans yet. Create one to get started.</td>
             </tr>
           )}
           {loans.map((loan) => (
@@ -37,9 +37,10 @@ export default async function HomePage() {
               <td>{loan.voucherNo}</td>
               <td>{loan.customerName}</td>
               <td>{loan.loanDate.toISOString().slice(0, 10)}</td>
+              <td>{loan.dueDate ? loan.dueDate.toISOString().slice(0, 10) : "—"}</td>
               <td>{formatMoney(loan.loanAmountPaise)}</td>
               <td>{formatMoney(loan.summary.balancePrincipalPaise)}</td>
-              <td>{loan.status}</td>
+              <td>{loan.displayStatus}</td>
               <td>
                 <Link href={`/loans/${loan.id}`}>View</Link>
               </td>

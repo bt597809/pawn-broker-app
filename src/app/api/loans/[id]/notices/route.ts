@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { handleApiError } from "@/lib/api";
 import { AppError } from "@/lib/errors";
-import { parseDate, receivePaymentSchema } from "@/lib/validation";
+import { noticeSchema, parseDate } from "@/lib/validation";
 import { paymentService } from "@/services/paymentService";
 
 export async function POST(
@@ -15,16 +15,12 @@ export async function POST(
     if (Number.isNaN(loanId)) {
       throw new AppError("Invalid loan id");
     }
-
-    const body = await request.json();
-    const parsed = receivePaymentSchema.parse(body);
-
-    const details = await paymentService.receivePayment(loanId, {
-      paymentDate: parseDate(parsed.paymentDate),
-      amount: parsed.amount,
-      paymentMode: parsed.paymentMode,
+    const parsed = noticeSchema.parse(await request.json());
+    const details = await paymentService.addNotice(loanId, {
+      noticeDate: parseDate(parsed.noticeDate),
+      channel: parsed.channel,
+      notes: parsed.notes,
     });
-
     return NextResponse.json({ data: details }, { status: 201 });
   } catch (err) {
     return handleApiError(err);

@@ -7,55 +7,122 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("CASHIER")
+  createdAt    DateTime @default(now())
+}
+
+model Customer {
+  id          Int      @id @default(autoincrement())
+  name        String
+  phone       String?
+  address     String?
+  idProofType String?
+  idProofNo   String?
+  createdAt   DateTime @default(now())
+  loans       Loan[]
+}
+
+model Scheme {
+  id                   Int      @id @default(autoincrement())
+  name                 String   @unique
+  interestRateMonthly  Float
+  tenureDays           Int
+  maxLtvPercent        Float    @default(75)
+  precloseAllowed      Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  loans                Loan[]
+}
+
 model Account {
-  id            Int            @id @default(autoincrement())
-  code          String         @unique
+  id            Int           @id @default(autoincrement())
+  code          String        @unique
   name          String
   accountType   String
   ledgerEntries LedgerEntry[]
 }
 
 model Loan {
-  id                 Int         @id @default(autoincrement())
-  voucherNo          String      @unique
-  customerName       String
-  loanDate           DateTime
-  loanAmountPaise    Int
+  id                  Int          @id @default(autoincrement())
+  voucherNo           String       @unique
+  customerId          Int?
+  customerName        String
+  schemeId            Int?
+  loanDate            DateTime
+  dueDate             DateTime?
+  loanAmountPaise     Int
   interestRateMonthly Float
-  pledgedItemName    String
-  grossWeightGm      Float
-  stoneWeightGm      Float
-  netWeightGm        Float
+  metalType           String       @default("GOLD")
+  purityKarat         Float        @default(22)
+  goldRatePaise       Int          @default(0)
+  maxEligiblePaise    Int          @default(0)
+  pledgedItemName     String
+  grossWeightGm       Float
+  stoneWeightGm       Float
+  netWeightGm         Float
   estimatedValuePaise Int
-  paymentMode        String
-  status             String      @default("ACTIVE")
-  createdAt          DateTime    @default(now())
-  payments           Payment[]
+  paymentMode         String
+  status              String       @default("ACTIVE")
+  closedAt            DateTime?
+  createdAt           DateTime     @default(now())
+  customer            Customer?    @relation(fields: [customerId], references: [id])
+  scheme              Scheme?      @relation(fields: [schemeId], references: [id])
+  payments            Payment[]
+  notices             LoanNotice[]
+  auctions            Auction[]
 }
 
 model Payment {
-  id                   Int      @id @default(autoincrement())
-  loanId               Int
-  voucherNo            String   @unique
-  paymentDate          DateTime
-  amountPaise          Int
-  interestPortionPaise Int
+  id                    Int      @id @default(autoincrement())
+  loanId                Int
+  voucherNo             String   @unique
+  paymentDate           DateTime
+  amountPaise           Int
+  interestPortionPaise  Int
   principalPortionPaise Int
-  createdAt            DateTime @default(now())
-  loan                 Loan     @relation(fields: [loanId], references: [id])
+  createdAt             DateTime @default(now())
+  loan                  Loan     @relation(fields: [loanId], references: [id])
+}
+
+model LoanNotice {
+  id         Int      @id @default(autoincrement())
+  loanId     Int
+  noticeDate DateTime
+  channel    String
+  notes      String?
+  createdAt  DateTime @default(now())
+  loan       Loan     @relation(fields: [loanId], references: [id])
+}
+
+model Auction {
+  id              Int      @id @default(autoincrement())
+  loanId          Int
+  voucherNo       String   @unique
+  auctionDate     DateTime
+  saleAmountPaise Int
+  expensesPaise   Int      @default(0)
+  surplusPaise    Int      @default(0)
+  shortfallPaise  Int      @default(0)
+  paymentMode     String
+  createdAt       DateTime @default(now())
+  loan            Loan     @relation(fields: [loanId], references: [id])
 }
 
 model LedgerEntry {
-  id            Int           @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   voucherNo     String
   entryDate     DateTime
   accountId     Int
-  debitPaise    Int           @default(0)
-  creditPaise   Int           @default(0)
+  debitPaise    Int      @default(0)
+  creditPaise   Int      @default(0)
   referenceType String
   referenceId   Int
-  createdAt     DateTime      @default(now())
-  account       Account       @relation(fields: [accountId], references: [id])
+  createdAt     DateTime @default(now())
+  account       Account  @relation(fields: [accountId], references: [id])
 
   @@index([entryDate])
   @@index([voucherNo])

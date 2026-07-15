@@ -1,4 +1,4 @@
-export type VoucherPrefix = "LN" | "RC";
+export type VoucherPrefix = "LN" | "RC" | "AQ";
 
 export function formatVoucherNo(prefix: VoucherPrefix, date: Date, seq: number): string {
   const y = date.getFullYear();

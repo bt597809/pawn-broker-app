@@ -9,7 +9,7 @@ export type LedgerEntryInput = {
   accountCode: string;
   debitPaise: number;
   creditPaise: number;
-  referenceType: "LOAN" | "PAYMENT";
+  referenceType: "LOAN" | "PAYMENT" | "AUCTION";
   referenceId: number;
 };
 

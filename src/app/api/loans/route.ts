@@ -1,31 +1,41 @@
 import { NextResponse } from "next/server";
-import { AppError } from "@/lib/errors";
+import { requireUser } from "@/lib/auth";
+import { handleApiError } from "@/lib/api";
 import { createLoanSchema, parseDate } from "@/lib/validation";
 import { loanService } from "@/services/loanService";
 
 export async function GET() {
   try {
+    await requireUser();
     const loans = await loanService.listLoans();
     return NextResponse.json({ data: loans });
   } catch (err) {
-    return handleError(err);
+    return handleApiError(err);
   }
 }
 
 export async function POST(request: Request) {
   try {
+    await requireUser();
     const body = await request.json();
     const parsed = createLoanSchema.parse(body);
 
     if (parsed.stoneWeightGm > parsed.grossWeightGm) {
-      throw new AppError("Stone weight cannot exceed gross weight");
+      return NextResponse.json(
+        { error: "Stone weight cannot exceed gross weight" },
+        { status: 400 }
+      );
     }
 
     const loan = await loanService.createLoan({
-      customerName: parsed.customerName,
+      customerId: parsed.customerId,
+      schemeId: parsed.schemeId,
       loanDate: parseDate(parsed.loanDate),
       loanAmount: parsed.loanAmount,
       interestRateMonthly: parsed.interestRateMonthly,
+      metalType: parsed.metalType,
+      purityKarat: parsed.purityKarat,
+      goldRatePerGram: parsed.goldRatePerGram,
       pledgedItemName: parsed.pledgedItemName,
       grossWeightGm: parsed.grossWeightGm,
       stoneWeightGm: parsed.stoneWeightGm,
@@ -35,17 +45,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ data: loan }, { status: 201 });
   } catch (err) {
-    return handleError(err);
+    return handleApiError(err);
   }
-}
-
-function handleError(err: unknown) {
-  if (err instanceof AppError) {
-    return NextResponse.json({ error: err.message }, { status: err.statusCode });
-  }
-  if (err && typeof err === "object" && "issues" in err) {
-    return NextResponse.json({ error: "Validation failed" }, { status: 400 });
-  }
-  console.error(err);
-  return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
 }

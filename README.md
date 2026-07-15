@@ -1,24 +1,34 @@
-# Mini Pawn Broker Module
+# Mini Pawn Broker (India shop)
 
-A small loan management app for a pawn broker shop. Built with **Next.js**, **Node.js API routes**, **Prisma**, and **PostgreSQL** (Neon).
+Lightweight Next.js pawn / gold-loan shop module for typical **Indian pawn broker** workflows: pledge jewellery, collect interest, renew, settle/pre-close, notice, and auction — with staff login and double-entry day book.
 
-The focus here is backend logic: interest calculation, payment allocation, transaction history, and double-entry accounting.
+Built with **Next.js**, **Prisma**, **PostgreSQL (Neon)**. UI stays plain HTML/CSS for fast renders.
+
+> Scope: shop-level demo. Not a full RBI NBFC compliance suite (KFS PDFs, newspaper auction ads, vault delay compensation, etc.). Those can be Phase 2.
 
 ## Setup
 
-Requirements: Node.js 18+ recommended.
+Node.js 18+ (20.x on Vercel).
 
 ```bash
 npm install
-cp .env.example .env   # add your DATABASE_URL
+cp .env.example .env
+# set DATABASE_URL and SESSION_SECRET (32+ chars)
 npx prisma migrate dev
 npm run db:seed
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3000](http://localhost:3000) → login.
 
-Run tests:
+### Default staff (after seed)
+
+| Email | Password | Role |
+|-------|----------|------|
+| `admin@pawnshop.local` | `admin123` | ADMIN |
+| `cashier@pawnshop.local` | `cashier123` | CASHIER |
+
+Change these before sharing with a real client.
 
 ```bash
 npm test
@@ -26,111 +36,92 @@ npm test
 
 ## Deploy to Vercel
 
-1. Push this repo to GitHub
-2. Create a free database at [Neon](https://neon.tech) and copy the connection string
-3. Sign up at [Vercel](https://vercel.com) and import the GitHub repo
-4. Add environment variable: `DATABASE_URL` = your Neon connection string
-5. Set Node.js version to **20.x** in Vercel project settings
-6. Deploy — migrations run automatically via `prisma migrate deploy` in the build step
-7. After first deploy, seed the chart of accounts:
+1. Push to GitHub
+2. Neon PostgreSQL → copy `DATABASE_URL`
+3. Import repo on Vercel
+4. Env vars:
+   - `DATABASE_URL` = Neon connection string
+   - `SESSION_SECRET` = long random string (32+ characters)
+5. Node.js **20.x**
+6. Deploy (build runs `prisma migrate deploy && next build`)
+7. Seed once against production:
    ```bash
    npm run db:seed
    ```
-   (run locally with production `DATABASE_URL` in `.env`)
 
-**Do not commit** `.env` or share your database password.
+## Indian shop flow (demo)
+
+1. **Login** as staff
+2. **Customers** → add borrower (name, phone, optional ID proof)
+3. **Schemes** → Standard 90 days / Short 30 days (LTV + rate + tenure)
+4. **New Loan** → select customer + scheme, enter metal/purity/rate/weights → LTV cap applied → due date from tenure
+5. **Receive payment** → interest first, then principal (partial OK)
+6. **Renew** → pay accrued interest, extend due date
+7. **Settle / Pre-closure** → pay full amount payable, loan CLOSED (ornament released)
+8. **Notice** → mark default notice path
+9. **Auction** → record sale + expenses; surplus payable / write-off shortfall; status AUCTIONED
+10. **Day Book** → every voucher’s debit/credit lines
 
 ## Features
 
-1. **Create Loan** — customer details, pledged item weights, auto net weight, payment mode (Cash/Bank)
-2. **Loan Details** — loan amount, interest till date, principal/interest paid, balance, total payable
-3. **Receive Payment** — partial/multiple payments; interest is cleared first, then principal
-4. **Day Book** — debit/credit ledger entries for every loan and payment
+- Staff authentication (session cookie; ADMIN / CASHIER)
+- Customer master
+- Loan schemes (rate, tenure, max LTV %, pre-close flag)
+- LTV-aware pledge (net wt × rate × karat/24 × LTV%)
+- Partial payments, settlement, renewal
+- Overdue display (past due date)
+- Notice + auction settlement
+- Day book accounting
 
-## Approach
-
-### Database design
-
-- `loans` — loan master record
-- `payments` — every receipt is stored separately (no balance overwrites)
-- `ledger_entries` — double-entry accounting lines
-- `accounts` — chart of accounts (seeded)
-
-Loan balances are **derived** from the original loan amount plus payment history.
-
-### Interest calculation
-
-Simple interest, pro-rated by days using a 30-day month:
+## Interest & allocation
 
 ```
-interest = principal × (monthlyRate / 100) × (days / 30)
+interest = outstandingPrincipal × (monthlyRate / 100) × (days / 30)
 ```
 
-Interest is calculated on the outstanding principal from the loan date (or last payment date) till today.
+Payments clear **interest first**, then principal. Balances are **derived** from loan + payment history (never overwrite silently).
 
-### Payment allocation
-
-When a payment comes in:
-
-1. Accrued interest is calculated on outstanding principal
-2. Payment clears interest first
-3. Remaining amount reduces principal
-
-### Accounting
-
-**Chart of accounts**
+## Accounting (chart of accounts)
 
 | Code | Account | Type |
 |------|---------|------|
-| CASH | Cash | Asset |
-| BANK | Bank | Asset |
+| CASH / BANK | Cash / Bank | Asset |
 | LOAN_REC | Loan Receivable | Asset |
 | INT_INC | Interest Income | Income |
+| AUCTION_EXP | Auction Expenses | Expense |
+| SURPLUS_PAYABLE | Auction Surplus Payable | Liability |
+| WRITE_OFF | Loan Write Off | Expense |
 
-**On loan disbursement**
+- **Disbursement:** Dr Loan Receivable / Cr Cash|Bank  
+- **Payment / settle / renew interest:** Dr Cash|Bank / Cr Interest Income + Loan Receivable  
+- **Auction:** Dr Cash (net of expenses) + Auction Exp (+ Write Off if short) / Cr Interest + Loan Rec (+ Surplus Payable if extra)
 
-| Account | Debit | Credit |
-|---------|-------|--------|
-| Loan Receivable | loan amount | |
-| Cash / Bank | | loan amount |
+## API (main)
 
-**On payment receipt**
+| Method | Path | Notes |
+|--------|------|-------|
+| POST | `/api/auth/login` | public |
+| POST | `/api/auth/logout` | |
+| GET/POST | `/api/customers` | |
+| GET/POST | `/api/schemes` | POST = ADMIN |
+| GET/POST | `/api/loans` | |
+| GET | `/api/loans/:id` | |
+| POST | `/api/loans/:id/payments` | |
+| GET | `/api/loans/:id/settlement-quote` | |
+| POST | `/api/loans/:id/settle` | |
+| POST | `/api/loans/:id/renew` | |
+| POST | `/api/loans/:id/notices` | |
+| POST | `/api/loans/:id/auction` | |
+| GET | `/api/day-book` | |
 
-| Account | Debit | Credit |
-|---------|-------|--------|
-| Cash / Bank | payment amount | |
-| Interest Income | | interest portion |
-| Loan Receivable | | principal portion |
+## Code layout
 
-### Code structure
+- `src/domain/` — interest, LTV, allocation, status
+- `src/repositories/` — Prisma
+- `src/services/` — business rules
+- `src/middleware.ts` — auth gate
+- `src/app/` — light pages + API routes
 
-- `src/domain/` — pure business helpers (interest, allocation, vouchers)
-- `src/repositories/` — Prisma data access (Repository pattern)
-- `src/services/` — application logic and validations
-- `src/app/api/` — REST endpoints
+## Phase 2 (out of scope here)
 
-Money is stored as integer paise to avoid floating-point issues.
-
-## API
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/loans` | List loans |
-| POST | `/api/loans` | Create loan |
-| GET | `/api/loans/:id` | Loan details |
-| POST | `/api/loans/:id/payments` | Record payment |
-| GET | `/api/day-book` | Day book report |
-
-## Sample flow
-
-1. Create a loan for a customer with a gold chain
-2. Open loan details — check interest till date
-3. Record a partial payment
-4. Record another payment to close the loan
-5. Open Day Book — verify debit/credit entries
-
-## Notes
-
-- UI is intentionally simple
-- No authentication (out of scope for the task)
-- Voucher format: `LN-YYYYMMDD-001` for loans, `RC-YYYYMMDD-001` for receipts
+Multi-branch, SMS notices, newspaper auction workflow, full RBI KFS, customer self-login, ornament photo vault.

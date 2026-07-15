@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { requireUser } from "@/lib/auth";
+import { handleApiError } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { LedgerRepository } from "@/repositories/ledgerRepository";
@@ -7,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
+    await requireUser();
     const { searchParams } = new URL(request.url);
     const from = searchParams.get("from");
     const to = searchParams.get("to");
@@ -26,7 +29,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ data });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+    return handleApiError(err);
   }
 }

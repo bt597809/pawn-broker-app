@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { formatVoucherNo } from "@/domain/voucherFactory";
 import { PaymentMode } from "@/domain/types";
+import { LoanStatus } from "@/domain/loanStatus";
 
 type DbClient = PrismaClient | Prisma.TransactionClient;
 
@@ -17,10 +18,17 @@ export class LoanRepository {
 
   async create(data: {
     voucherNo: string;
+    customerId: number;
     customerName: string;
+    schemeId: number;
     loanDate: Date;
+    dueDate: Date;
     loanAmountPaise: number;
     interestRateMonthly: number;
+    metalType: string;
+    purityKarat: number;
+    goldRatePaise: number;
+    maxEligiblePaise: number;
     pledgedItemName: string;
     grossWeightGm: number;
     stoneWeightGm: number;
@@ -34,7 +42,13 @@ export class LoanRepository {
   async findById(id: number) {
     return this.db.loan.findUnique({
       where: { id },
-      include: { payments: { orderBy: { paymentDate: "asc" } } },
+      include: {
+        payments: { orderBy: { paymentDate: "asc" } },
+        notices: { orderBy: { noticeDate: "asc" } },
+        auctions: { orderBy: { auctionDate: "asc" } },
+        scheme: true,
+        customer: true,
+      },
     });
   }
 
@@ -43,12 +57,25 @@ export class LoanRepository {
       orderBy: { createdAt: "desc" },
       include: {
         payments: { orderBy: { paymentDate: "asc" } },
+        scheme: true,
+        customer: true,
       },
     });
   }
 
-  async updateStatus(id: number, status: "ACTIVE" | "CLOSED") {
-    return this.db.loan.update({ where: { id }, data: { status } });
+  async updateStatus(
+    id: number,
+    status: LoanStatus,
+    extra?: { dueDate?: Date; closedAt?: Date | null }
+  ) {
+    return this.db.loan.update({
+      where: { id },
+      data: {
+        status,
+        ...(extra?.dueDate ? { dueDate: extra.dueDate } : {}),
+        ...(extra && "closedAt" in extra ? { closedAt: extra.closedAt } : {}),
+      },
+    });
   }
 
   async nextLoanVoucherNo(loanDate: Date) {

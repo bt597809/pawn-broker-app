@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import CollapsibleFilters from "../CollapsibleFilters";
 
 type DayBookRow = {
   date: string;
@@ -21,11 +22,11 @@ export default function DayBookPage() {
   const [staff, setStaff] = useState("");
   const [error, setError] = useState("");
 
-  async function load() {
+  async function load(nextFrom = from, nextTo = to) {
     setError("");
     const params = new URLSearchParams();
-    if (from) params.set("from", from);
-    if (to) params.set("to", to);
+    if (nextFrom) params.set("from", nextFrom);
+    if (nextTo) params.set("to", nextTo);
 
     const res = await fetch(`/api/day-book?${params.toString()}`);
     const json = await res.json();
@@ -64,68 +65,66 @@ export default function DayBookPage() {
     setQ("");
     setAccount("");
     setStaff("");
-    setError("");
-    try {
-      const res = await fetch("/api/day-book");
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error || "Failed to load day book");
-        return;
-      }
-      setRows(json.data);
-    } catch {
-      setError("Failed to load day book");
-    }
+    await load("", "");
   }
+
+  const hasActiveFilter = Boolean(from || to || q || account || staff);
 
   return (
     <div>
       <div className="card">
         <h2>Day Book</h2>
-        <div className="grid">
-          <label>
-            From
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-          </label>
-          <label>
-            To
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-          </label>
-          <label>
-            Search
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Voucher, narration, amounts"
-            />
-          </label>
-          <label>
-            Account
-            <input
-              value={account}
-              onChange={(e) => setAccount(e.target.value)}
-              placeholder="Cash, Bank, Loan Receivable…"
-            />
-          </label>
-          <label>
-            Staff
-            <input
-              value={staff}
-              onChange={(e) => setStaff(e.target.value)}
-              placeholder="Staff name"
-            />
-          </label>
-        </div>
-        <p style={{ marginTop: 12 }}>
-          <button type="button" onClick={load}>
-            Apply date filter
-          </button>{" "}
-          <button type="button" onClick={clearFilters}>
-            Clear
-          </button>
-        </p>
+        <CollapsibleFilters
+          title={hasActiveFilter ? "Search filters (active)" : "Search filters"}
+          defaultOpen={hasActiveFilter}
+        >
+          <div className="grid">
+            <label>
+              From
+              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+            </label>
+            <label>
+              To
+              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            </label>
+            <label>
+              Search
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Voucher, narration, amounts"
+              />
+            </label>
+            <label>
+              Account
+              <input
+                value={account}
+                onChange={(e) => setAccount(e.target.value)}
+                placeholder="Cash, Bank, Loan Receivable…"
+              />
+            </label>
+            <label>
+              Staff
+              <input
+                value={staff}
+                onChange={(e) => setStaff(e.target.value)}
+                placeholder="Staff name"
+              />
+            </label>
+          </div>
+          <p style={{ marginTop: 12 }}>
+            <button type="button" onClick={() => load()}>
+              Apply date filter
+            </button>{" "}
+            <button type="button" onClick={clearFilters}>
+              Clear
+            </button>
+          </p>
+        </CollapsibleFilters>
         {error && <p className="error">{error}</p>}
-        <p className="muted">{filtered.length} row(s)</p>
+        <p className="muted" style={{ marginTop: 8 }}>
+          {filtered.length} row(s)
+        </p>
       </div>
 
       <table>

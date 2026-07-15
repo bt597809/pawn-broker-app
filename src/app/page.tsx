@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatMoney } from "@/lib/money";
 import { loanService } from "@/services/loanService";
+import CollapsibleFilters from "./CollapsibleFilters";
 
 export const dynamic = "force-dynamic";
 
@@ -23,46 +24,54 @@ export default async function HomePage({
     to: searchParams.to || "",
   };
   const loans = await loanService.listLoans(filters);
+  const hasActiveFilter = Boolean(
+    filters.q || filters.from || filters.to || (filters.status && filters.status !== "ALL")
+  );
 
   return (
     <div>
       <div className="card">
         <p className="muted">Active, overdue, and closed loans</p>
-        <form method="get">
-          <div className="grid" style={{ marginTop: 12 }}>
-            <label>
-              Search
-              <input
-                name="q"
-                defaultValue={filters.q}
-                placeholder="Voucher, customer, item, staff"
-              />
-            </label>
-            <label>
-              Status
-              <select name="status" defaultValue={filters.status}>
-                <option value="ALL">All</option>
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="RENEWED">RENEWED</option>
-                <option value="OVERDUE">OVERDUE</option>
-                <option value="NOTICE">NOTICE</option>
-                <option value="CLOSED">CLOSED</option>
-                <option value="AUCTIONED">AUCTIONED</option>
-              </select>
-            </label>
-            <label>
-              Loan date from
-              <input name="from" type="date" defaultValue={filters.from} />
-            </label>
-            <label>
-              Loan date to
-              <input name="to" type="date" defaultValue={filters.to} />
-            </label>
-          </div>
-          <p style={{ marginTop: 12 }}>
-            <button type="submit">Search</button> <Link href="/">Clear</Link>
-          </p>
-        </form>
+        <CollapsibleFilters
+          title={hasActiveFilter ? "Search filters (active)" : "Search filters"}
+          defaultOpen={hasActiveFilter}
+        >
+          <form method="get">
+            <div className="grid">
+              <label>
+                Search
+                <input
+                  name="q"
+                  defaultValue={filters.q}
+                  placeholder="Voucher, customer, item, staff"
+                />
+              </label>
+              <label>
+                Status
+                <select name="status" defaultValue={filters.status}>
+                  <option value="ALL">All</option>
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="RENEWED">RENEWED</option>
+                  <option value="OVERDUE">OVERDUE</option>
+                  <option value="NOTICE">NOTICE</option>
+                  <option value="CLOSED">CLOSED</option>
+                  <option value="AUCTIONED">AUCTIONED</option>
+                </select>
+              </label>
+              <label>
+                Loan date from
+                <input name="from" type="date" defaultValue={filters.from} />
+              </label>
+              <label>
+                Loan date to
+                <input name="to" type="date" defaultValue={filters.to} />
+              </label>
+            </div>
+            <p style={{ marginTop: 12 }}>
+              <button type="submit">Search</button> <Link href="/">Clear</Link>
+            </p>
+          </form>
+        </CollapsibleFilters>
       </div>
 
       <table>

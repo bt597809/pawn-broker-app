@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { customerService } from "@/services/customerService";
+import CollapsibleFilters from "../CollapsibleFilters";
 
 export const dynamic = "force-dynamic";
 
@@ -18,22 +19,27 @@ export default async function CustomersPage({
         <p>
           <Link href="/customers/new">Add customer</Link>
         </p>
-        <form method="get" style={{ marginTop: 12 }}>
-          <div className="grid">
-            <label>
-              Search
-              <input
-                name="q"
-                defaultValue={q}
-                placeholder="Name, phone, ID proof, address"
-              />
-            </label>
-          </div>
-          <p style={{ marginTop: 12 }}>
-            <button type="submit">Search</button>{" "}
-            <Link href="/customers">Clear</Link>
-          </p>
-        </form>
+        <CollapsibleFilters
+          title={q ? "Search filters (active)" : "Search filters"}
+          defaultOpen={Boolean(q)}
+        >
+          <form method="get">
+            <div className="grid">
+              <label>
+                Search
+                <input
+                  name="q"
+                  defaultValue={q}
+                  placeholder="Name, phone, ID proof, address"
+                />
+              </label>
+            </div>
+            <p style={{ marginTop: 12 }}>
+              <button type="submit">Search</button>{" "}
+              <Link href="/customers">Clear</Link>
+            </p>
+          </form>
+        </CollapsibleFilters>
       </div>
       <table>
         <thead>

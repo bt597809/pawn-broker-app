@@ -96,3 +96,30 @@ button:disabled { background: #999; cursor: not-allowed; }
 
 .error { color: #a00; margin-bottom: 12px; }
 .muted { color: #666; font-size: 0.9rem; }
+
+.filter-panel {
+  margin-top: 8px;
+  border-top: 1px solid #ddd;
+  padding-top: 8px;
+}
+
+.filter-toggle {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  background: transparent;
+  color: #1a4d8f;
+  border: 1px solid #ccc;
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.filter-toggle:hover {
+  background: #f0ebe3;
+}
+
+.filter-body {
+  margin-top: 12px;
+}
